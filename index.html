@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ケーブルラック S字曲げ計算</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #2d343d;
+    --accent: #ffb01f;
+    --accent-dim: #b07a00;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --ok: #3fb950;
+    --ng: #f85149;
+    --line: #58a6ff;
+    --inner: #7ee787;
+    --outer: #ff9d6c;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    overscroll-behavior: none;
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 14px 80px;
+  }
+
+  header {
+    text-align: center;
+    padding: 8px 0 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+    position: relative;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  header .sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.2em;
+  }
+
+  .accent-bar {
+    display: inline-block;
+    width: 32px;
+    height: 3px;
+    background: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .back-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-30%);
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+  }
+
+  .back-btn:active { background: var(--panel); }
+
+  .menu { padding: 20px 0; }
+
+  .menu-title {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-bottom: 24px;
+  }
+
+  .menu-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .menu-card:active {
+    transform: scale(0.98);
+    border-color: var(--accent);
+  }
+
+  .menu-card .icon {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    background: var(--panel-2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menu-card .text h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  .menu-card .text p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .menu-card .arrow {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 20px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card h2::before { content: "■"; font-size: 10px; }
+
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .field .input-wrap { position: relative; }
+
+  .field input[type="number"] {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 44px 12px 12px;
+    color: var(--text);
+    font-size: 17px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    -moz-appearance: textfield;
+  }
+
+  .field input[type="number"]::-webkit-outer-spin-button,
+  .field input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .field input:focus { outline: none; border-color: var(--accent); }
+
+  .unit {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .rack-block {
+    background: var(--panel-2);
+    border-left: 3px solid var(--line);
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+
+  .rack-block.right { border-left-color: var(--accent); }
+
+  .rack-block .lbl {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .origin-info {
+    background: var(--panel-2);
+    border-left: 3px solid var(--line);
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .origin-info b { color: var(--line); letter-spacing: 0.1em; }
+
+  .btn-calc {
+    width: 100%;
+    background: var(--accent);
+    color: #1a1a1a;
+    border: none;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    margin: 6px 0 14px;
+  }
+
+  .btn-calc:active { background: var(--accent-dim); }
+
+  .btn-clear {
+    width: 100%;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .result { display: none; }
+  .result.show { display: block; }
+
+  .error-box {
+    background: rgba(248, 81, 73, 0.1);
+    border: 1px solid var(--ng);
+    color: var(--ng);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .warn-box {
+    background: rgba(255, 176, 31, 0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .ok-box {
+    background: rgba(63, 185, 80, 0.08);
+    border: 1px solid var(--ok);
+    color: var(--ok);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .diagram {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+
+  .diagram svg { width: 100%; height: auto; display: block; }
+
+  .help {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.7;
+  }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    padding: 8px 4px;
+    justify-content: center;
+  }
+
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  details.guide {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0;
+    margin-bottom: 14px;
+  }
+
+  details.guide summary {
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--accent);
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    list-style: none;
+  }
+
+  details.guide summary::-webkit-details-marker { display: none; }
+  details.guide summary::after { content: "＋"; float: right; color: var(--muted); }
+  details.guide[open] summary::after { content: "−"; }
+
+  details.guide .content {
+    padding: 0 14px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  details.guide .content code {
+    background: var(--panel-2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- メニュー画面 -->
+  <div class="screen active" id="screen-menu">
+    <header>
+      <span class="accent-bar"></span>
+      <h1>S字曲げ 切断計算</h1>
+      <div class="sub">CABLE RACK / S-BEND CALCULATOR</div>
+    </header>
+
+    <div class="menu">
+      <div class="menu-title">▎モードを選択</div>
+
+      <div class="menu-card" data-target="screen-horizontal">
+        <div class="icon">
+          <svg width="44" height="44" viewBox="0 0 44 44">
+            <rect x="3" y="14" width="14" height="8" fill="rgba(88,166,255,0.15)" stroke="#58a6ff" stroke-width="1.5"/>
+            <rect x="27" y="22" width="14" height="8" fill="rgba(255,176,31,0.15)" stroke="#ffb01f" stroke-width="1.5"/>
+            <line x1="17" y1="14" x2="27" y2="22" stroke="#ff9d6c" stroke-width="2"/>
+            <line x1="17" y1="22" x2="27" y2="30" stroke="#7ee787" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="text">
+          <h3>平面 S字</h3>
+          <p>向かい合うラックを平面図で<br>横方向にS字接続</p>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+
+      <div class="menu-card" data-target="screen-vertical">
+        <div class="icon">
+          <svg width="44" height="44" viewBox="0 0 44 44">
+            <rect x="3" y="10" width="14" height="6" fill="rgba(88,166,255,0.15)" stroke="#58a6ff" stroke-width="1.5"/>
+            <rect x="27" y="28" width="14" height="6" fill="rgba(255,176,31,0.15)" stroke="#ffb01f" stroke-width="1.5"/>
+            <line x1="17" y1="13" x2="27" y2="31" stroke="#3fb950" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="text">
+          <h3>上下 S字</h3>
+          <p>異なる高さのラックを<br>立面図で上下にS字接続</p>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+
+      <details class="guide" style="margin-top:16px">
+        <summary>このアプリについて</summary>
+        <div class="content">
+          現役電気工事士が現場目線で作ったS字曲げ計算ツール。<br><br>
+          ・<b style="color:var(--text)">平面S字</b>: 平面図で見て横方向にずれるラック同士の接続<br>
+          ・<b style="color:var(--text)">上下S字</b>: 立面図で見て高さがずれるラック同士の接続<br><br>
+          いずれも<b style="color:var(--text)">左ラックを原点</b>として、右ラックの相対座標から自動計算します。<br>
+          ネグロス電工の現場手曲げ範囲(15°〜60°)を基準にチェック。<br><br>
+          <code>※ 計算結果は参考値です。実際の施工は現場確認の上で行ってください。</code>
+        </div>
+      </details>
+    </div>
+
+    <footer>NEGUROSU BASED / FIELD BENDING</footer>
+  </div>
+
+  <!-- 平面S字画面 -->
+  <div class="screen" id="screen-horizontal">
+    <header>
+      <button class="back-btn" data-back>← 戻る</button>
+      <span class="accent-bar"></span>
+      <h1>平面 S字</h1>
+      <div class="sub">HORIZONTAL OFFSET</div>
+    </header>
+
+    <details class="guide">
+      <summary>使い方</summary>
+      <div class="content">
+        <b style="color:var(--text)">向かい合う2本のラック</b>を平面図で見たときの計算です。<br><br>
+        <b style="color:var(--text)">左ラックを原点(0,0)</b>に固定し、右ラックの相対座標を入力。<br>
+        ・X = 端面間距離<br>
+        ・Y = 横ずれ量(下方向が正)<br><br>
+        内側親桁は端面でそのまま曲げ、外側親桁だけ <b style="color:var(--outer)">W × tan(θ/2)</b> 突き出します。
+      </div>
+    </details>
+
+    <div class="card">
+      <h2>ラック仕様</h2>
+      <div class="field">
+        <label>ラック幅 W (親桁間距離)</label>
+        <div class="input-wrap">
+          <input type="number" id="h-W" inputmode="numeric" placeholder="例: 600" value="600">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>座標入力 (平面図)</h2>
+      <div class="origin-info">
+        <b>● 左ラック (基準)</b><br>
+        右端面 = 原点(0, 0) 固定
+      </div>
+      <div class="rack-block right">
+        <div class="lbl">▎右ラック (相対位置)</div>
+        <div class="row">
+          <div class="field">
+            <label>X (端面間距離)</label>
+            <div class="input-wrap">
+              <input type="number" id="h-x2" inputmode="numeric" placeholder="例: 1000">
+              <span class="unit">mm</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Y (横ずれ・下が正)</label>
+            <div class="input-wrap">
+              <input type="number" id="h-y2" inputmode="numeric" placeholder="例: 300">
+              <span class="unit">mm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-calc" id="h-calcBtn">計算する</button>
+
+    <div class="result" id="h-result">
+      <div class="card">
+        <h2>計算結果</h2>
+        <div id="h-status"></div>
+        <div class="diagram" id="h-diagramWrap"></div>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--outer)"></span>外側親桁(突き出し)</span>
+          <span><span class="dot" style="background:var(--inner)"></span>内側親桁(端面で曲げ)</span>
+        </div>
+        <div class="help" id="h-helpText"></div>
+      </div>
+      <button class="btn-clear" id="h-clearBtn">クリア</button>
+    </div>
+  </div>
+
+  <!-- 上下S字画面 -->
+  <div class="screen" id="screen-vertical">
+    <header>
+      <button class="back-btn" data-back>← 戻る</button>
+      <span class="accent-bar"></span>
+      <h1>上下 S字</h1>
+      <div class="sub">VERTICAL OFFSET</div>
+    </header>
+
+    <details class="guide">
+      <summary>使い方</summary>
+      <div class="content">
+        <b style="color:var(--text)">高さの異なる2本のラック</b>を立面図(横から見た図)で見たときの計算です。<br><br>
+        <b style="color:var(--text)">左ラックを原点(0,0)</b>に固定し、右ラックの相対座標を入力。<br>
+        ・X = 水平方向の距離(端面間)<br>
+        ・Y = 段差(下方向が正)<br><br>
+        ラックを横から見て曲げる加工なので、親桁の<b>側板高さ H</b> が曲げ方向の親桁間距離になります。<br>
+        内側(曲げの内周側)は端面でそのまま曲げ、外側だけ <b style="color:var(--outer)">H × tan(θ/2)</b> 突き出します。
+      </div>
+    </details>
+
+    <div class="card">
+      <h2>ラック仕様</h2>
+      <div class="field">
+        <label>親桁の側板高さ H</label>
+        <div class="input-wrap">
+          <input type="number" id="v-W" inputmode="numeric" placeholder="例: 60" value="60">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>座標入力 (立面図)</h2>
+      <div class="origin-info">
+        <b>● 左ラック (基準)</b><br>
+        右端面・上面 = 原点(0, 0) 固定
+      </div>
+      <div class="rack-block right">
+        <div class="lbl">▎右ラック (相対位置)</div>
+        <div class="row">
+          <div class="field">
+            <label>X (水平距離)</label>
+            <div class="input-wrap">
+              <input type="number" id="v-x2" inputmode="numeric" placeholder="例: 1000">
+              <span class="unit">mm</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Y (段差・下が正)</label>
+            <div class="input-wrap">
+              <input type="number" id="v-y2" inputmode="numeric" placeholder="例: 300">
+              <span class="unit">mm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-calc" id="v-calcBtn">計算する</button>
+
+    <div class="result" id="v-result">
+      <div class="card">
+        <h2>計算結果</h2>
+        <div id="v-status"></div>
+        <div class="diagram" id="v-diagramWrap"></div>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--outer)"></span>外側親桁(突き出し)</span>
+          <span><span class="dot" style="background:var(--inner)"></span>内側親桁(端面で曲げ)</span>
+        </div>
+        <div class="help" id="v-helpText"></div>
+      </div>
+      <button class="btn-clear" id="v-clearBtn">クリア</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const MIN_ANGLE = 15;
+const MAX_ANGLE = 60;
+
+function fmt(n, d = 1) { return Number(n).toFixed(d); }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+document.querySelectorAll('.menu-card').forEach(card => {
+  card.addEventListener('click', () => showScreen(card.dataset.target));
+});
+
+document.querySelectorAll('[data-back]').forEach(btn => {
+  btn.addEventListener('click', () => showScreen('screen-menu'));
+});
+
+function calculateSBend(W, dx, dy, mode) {
+  if (isNaN(W) || isNaN(dx) || isNaN(dy)) {
+    return { error: '⚠ 全ての項目を入力してください。' };
+  }
+  if (W <= 0) {
+    return { error: '⚠ ラック幅/高さは正の値を入力してください。' };
+  }
+  if (dx <= 0) {
+    return { error: '⚠ 右ラックのX座標は正の値(左ラックより右)にしてください。' };
+  }
+
+  const offset = Math.abs(dy);
+  if (offset < 1) {
+    return { error: `⚠ ${mode === 'horizontal' ? '横ずれ' : '段差'}がほぼゼロのため、S字曲げは不要です。` };
+  }
+
+  const minThetaRad = Math.atan(offset / dx);
+  const minThetaDeg = minThetaRad * 180 / Math.PI;
+
+  if (minThetaDeg > MAX_ANGLE) {
+    const minDx = offset / Math.tan(MAX_ANGLE * Math.PI / 180);
+    return {
+      error: `✕ 加工不可能<br>${mode === 'horizontal' ? '横ずれ' : '段差'}(${fmt(offset)}mm)に対して${mode === 'horizontal' ? '端面間距離' : '水平距離'}(${fmt(dx)}mm)が短すぎます。<br>必要な角度が${fmt(minThetaDeg)}°となり、現場手曲げの限界(${MAX_ANGLE}°)を超えます。<br><br>${mode === 'horizontal' ? '端面間距離' : '水平距離'}を最低 <b>${fmt(minDx)}mm</b> 以上確保してください。`,
+      drawNg: true
+    };
+  }
+
+  return {
+    ok: true,
+    theta: minThetaDeg,
+    halfTheta: minThetaDeg / 2,
+    outerProtrusion: W * Math.tan(minThetaRad / 2),
+    slantCenter: offset / Math.sin(minThetaRad),
+    offset, dx, dy,
+    isDownward: dy > 0
+  };
+}
+
+function calcHorizontal() {
+  const W  = parseFloat($('h-W').value);
+  const x2 = parseFloat($('h-x2').value);
+  const y2 = parseFloat($('h-y2').value);
+
+  $('h-result').classList.add('show');
+  $('h-status').innerHTML = '';
+  $('h-helpText').innerHTML = '';
+  $('h-diagramWrap').innerHTML = '';
+
+  const r = calculateSBend(W, x2, y2, 'horizontal');
+
+  if (r.error) {
+    $('h-status').innerHTML = `<div class="error-box">${r.error}</div>`;
+    if (r.drawNg) drawDiagram('h-diagramWrap', W, x2, y2, null, null, false, 'horizontal');
+    return;
+  }
+
+  let warning = '';
+  if (r.offset > W * 1.5) {
+    warning += `<div class="warn-box">注意: 横ずれ(${fmt(r.offset)}mm)がラック幅(${W}mm)の1.5倍を超えています。45°エルボや水平曲がりラックの使用も検討してください。</div>`;
+  }
+
+  $('h-status').innerHTML = `<div class="ok-box">✓ 加工可能 (現場手曲げ範囲内)</div>` + warning;
+
+  $('h-helpText').innerHTML = `
+    <b style="color:var(--text)">施工メモ:</b><br>
+    曲げ角度 <b style="color:var(--accent)">${fmt(r.theta)}°</b> / 横ずれ <b style="color:var(--accent)">${fmt(r.offset)}mm</b>(${r.isDownward ? '下' : '上'}方向)<br>
+    外側突き出し量 = W × tan(${fmt(r.halfTheta)}°) = <b style="color:var(--accent)">${fmt(r.outerProtrusion)}mm</b><br><br>
+    <b style="color:var(--text)">手順:</b><br>
+    ① <span style="color:var(--inner)">内側親桁</span>は端面でそのまま${fmt(r.theta)}°曲げ<br>
+    ② <span style="color:var(--outer)">外側親桁</span>は端面から ${fmt(r.outerProtrusion)}mm 延長して切断後${fmt(r.theta)}°曲げ<br>
+    ③ 斜め部の親桁端面は ${fmt(r.halfTheta)}° の斜め切り<br>
+    ※ 寸法は親桁芯々基準。切断幅(2〜3mm)は別途考慮。
+  `;
+
+  drawDiagram('h-diagramWrap', W, x2, y2, r.theta, r, true, 'horizontal');
+}
+
+function calcVertical() {
+  const W  = parseFloat($('v-W').value);
+  const x2 = parseFloat($('v-x2').value);
+  const y2 = parseFloat($('v-y2').value);
+
+  $('v-result').classList.add('show');
+  $('v-status').innerHTML = '';
+  $('v-helpText').innerHTML = '';
+  $('v-diagramWrap').innerHTML = '';
+
+  const r = calculateSBend(W, x2, y2, 'vertical');
+
+  if (r.error) {
+    $('v-status').innerHTML = `<div class="error-box">${r.error}</div>`;
+    if (r.drawNg) drawDiagram('v-diagramWrap', W, x2, y2, null, null, false, 'vertical');
+    return;
+  }
+
+  let warning = '';
+  if (r.offset > W * 5) {
+    warning += `<div class="warn-box">注意: 段差(${fmt(r.offset)}mm)が側板高さ(${W}mm)の5倍を超えています。立ち上がり継ぎ金具の使用を推奨します。</div>`;
+  }
+
+  $('v-status').innerHTML = `<div class="ok-box">✓ 加工可能 (現場手曲げ範囲内)</div>` + warning;
+
+  $('v-helpText').innerHTML = `
+    <b style="color:var(--text)">施工メモ:</b><br>
+    曲げ角度 <b style="color:var(--accent)">${fmt(r.theta)}°</b> / 段差 <b style="color:var(--accent)">${fmt(r.offset)}mm</b>(${r.isDownward ? '下げ' : '上げ'})<br>
+    外側突き出し量 = H × tan(${fmt(r.halfTheta)}°) = <b style="color:var(--accent)">${fmt(r.outerProtrusion)}mm</b><br><br>
+    <b style="color:var(--text)">手順:</b><br>
+    ① <span style="color:var(--inner)">内側親桁</span>(曲げの内周側)は端面でそのまま${fmt(r.theta)}°曲げ<br>
+    ② <span style="color:var(--outer)">外側親桁</span>(曲げの外周側)は端面から ${fmt(r.outerProtrusion)}mm 延長して切断後${fmt(r.theta)}°曲げ<br>
+    ③ 斜め部の親桁端面は ${fmt(r.halfTheta)}° の斜め切り<br>
+    ※ 親桁(側板)を曲げる加工。<br>
+    ※ 寸法は親桁芯々基準。切断幅(2〜3mm)は別途考慮。
+  `;
+
+  drawDiagram('v-diagramWrap', W, x2, y2, r.theta, r, true, 'vertical');
+}
+
+function drawDiagram(targetId, W, dx, dy, theta, info, ok, mode) {
+  const svgW = 460;
+  const svgH = 340;
+  const margin = 36;
+  const sideExtend = 50;
+  const dimSpace = 40;
+
+  const totalW = dx + sideExtend * 2;
+  const totalH = Math.max(Math.abs(dy) + W * 1.4, W * 1.8);
+
+  const scale = Math.min(
+    (svgW - margin * 2 - dimSpace) / totalW,
+    (svgH - margin * 2 - dimSpace) / totalH
+  );
+
+  const drawDx = dx * scale;
+  const drawW  = W * scale;
+  const drawDy = dy * scale;
+  const drawSide = sideExtend * scale;
+
+  const baseX = margin + drawSide;
+  const baseY = (svgH - dimSpace) / 2 - drawDy / 2;
+  const rightY = baseY + drawDy;
+
+  const viewLabel = mode === 'horizontal' ? 'PLAN VIEW' : 'SIDE VIEW';
+
+  let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<style>
+    .rack { fill: rgba(88,166,255,0.08); stroke: #58a6ff; stroke-width: 1.5; }
+    .rack-r { fill: rgba(255,176,31,0.08); stroke: #ffb01f; }
+    .rail-outer { stroke: #ff9d6c; stroke-width: 2.5; fill: none; }
+    .rail-inner { stroke: #7ee787; stroke-width: 2.5; fill: none; }
+    .endline { stroke: #8b949e; stroke-width: 0.8; stroke-dasharray: 3 2; fill: none; }
+    .lbl { fill: #8b949e; font-size: 10px; font-family: sans-serif; }
+    .lbl-acc { fill: #ffb01f; font-size: 11px; font-family: monospace; font-weight: bold; }
+    .lbl-out { fill: #ff9d6c; font-size: 10px; font-family: monospace; font-weight: bold; }
+    .lbl-in { fill: #7ee787; font-size: 10px; font-family: monospace; font-weight: bold; }
+    .lbl-slant { fill: #ffb01f; font-size: 11px; font-family: monospace; font-weight: bold; }
+    .dim-out { stroke: #ff9d6c; stroke-width: 0.7; fill: none; }
+    .dim { stroke: #8b949e; stroke-width: 0.7; stroke-dasharray: 2 2; fill: none; }
+    .center { stroke: #ffb01f; stroke-width: 0.5; stroke-dasharray: 4 2; opacity: 0.4; fill: none; }
+    .bad { stroke: #f85149; stroke-dasharray: 4 3; stroke-width: 2; fill: none; }
+  </style>`;
+
+  svg += `<text x="${margin - 4}" y="14" class="lbl" style="font-size:9px;letter-spacing:0.2em">${viewLabel}</text>`;
+
+  const lRackX1 = baseX - drawSide;
+  svg += `<rect x="${lRackX1}" y="${baseY - drawW/2}" width="${drawSide}" height="${drawW}" class="rack"/>`;
+  svg += `<text x="${lRackX1 + 4}" y="${baseY - drawW/2 - 5}" class="lbl">左ラック (0,0)</text>`;
+
+  svg += `<line x1="${baseX}" y1="${baseY - drawW/2 - 8}" x2="${baseX}" y2="${baseY + drawW/2 + 8}" stroke="#58a6ff" stroke-width="1" stroke-dasharray="2 2"/>`;
+  svg += `<text x="${baseX}" y="${baseY - drawW/2 - 12}" class="lbl" text-anchor="middle" style="font-size:9px">原点</text>`;
+
+  const rRackX1 = baseX + drawDx;
+  const rRackX2 = rRackX1 + drawSide;
+  svg += `<rect x="${rRackX1}" y="${rightY - drawW/2}" width="${drawSide}" height="${drawW}" class="rack rack-r"/>`;
+  svg += `<text x="${rRackX1 + 4}" y="${rightY - drawW/2 - 5}" class="lbl">右ラック</text>`;
+
+  svg += `<line x1="${rRackX1}" y1="${rightY - drawW/2 - 8}" x2="${rRackX1}" y2="${rightY + drawW/2 + 8}" stroke="#ffb01f" stroke-width="1" stroke-dasharray="2 2"/>`;
+  svg += `<text x="${rRackX1}" y="${rightY - drawW/2 - 12}" class="lbl" text-anchor="middle" style="font-size:9px">(${dx.toFixed(0)},${dy.toFixed(0)})</text>`;
+
+  if (ok && info) {
+    const upperIsOuter = info.isDownward;
+
+    const leftUpperCut = baseX + (upperIsOuter ? info.outerProtrusion : 0) * scale;
+    const leftLowerCut = baseX + (upperIsOuter ? 0 : info.outerProtrusion) * scale;
+    const rightUpperCut = rRackX1 - (upperIsOuter ? 0 : info.outerProtrusion) * scale;
+    const rightLowerCut = rRackX1 - (upperIsOuter ? info.outerProtrusion : 0) * scale;
+
+    const upperClass = upperIsOuter ? 'rail-outer' : 'rail-inner';
+    const lowerClass = upperIsOuter ? 'rail-inner' : 'rail-outer';
+
+    svg += `<polyline points="${baseX},${baseY - drawW/2} ${leftUpperCut},${baseY - drawW/2} ${rightUpperCut},${rightY - drawW/2} ${rRackX1},${rightY - drawW/2}" class="${upperClass}"/>`;
+    svg += `<polyline points="${baseX},${baseY + drawW/2} ${leftLowerCut},${baseY + drawW/2} ${rightLowerCut},${rightY + drawW/2} ${rRackX1},${rightY + drawW/2}" class="${lowerClass}"/>`;
+
+    const centerProtrusion = (W / 2) * Math.tan(theta / 2 * Math.PI / 180) * scale;
+    const cutCenterA = baseX + centerProtrusion;
+    const cutCenterB = rRackX1 - centerProtrusion;
+    svg += `<polyline points="${baseX},${baseY} ${cutCenterA},${baseY} ${cutCenterB},${rightY} ${rRackX1},${rightY}" class="center"/>`;
+
+    svg += `<line x1="${leftUpperCut}" y1="${baseY - drawW/2}" x2="${leftLowerCut}" y2="${baseY + drawW/2}" class="endline"/>`;
+    svg += `<line x1="${rightUpperCut}" y1="${rightY - drawW/2}" x2="${rightLowerCut}" y2="${rightY + drawW/2}" class="endline"/>`;
+
+    const leftUpperVal = upperIsOuter ? info.outerProtrusion : 0;
+    if (leftUpperVal > 0.5) {
+      const upDimY = baseY - drawW/2 - 18;
+      svg += `<line x1="${baseX}" y1="${upDimY}" x2="${leftUpperCut}" y2="${upDimY}" class="dim-out"/>`;
+      svg += `<line x1="${baseX}" y1="${upDimY - 3}" x2="${baseX}" y2="${upDimY + 3}" class="dim-out"/>`;
+      svg += `<line x1="${leftUpperCut}" y1="${upDimY - 3}" x2="${leftUpperCut}" y2="${upDimY + 3}" class="dim-out"/>`;
+      svg += `<text x="${(baseX + leftUpperCut) / 2}" y="${upDimY - 4}" class="lbl-out" text-anchor="middle">${fmt(leftUpperVal)}</text>`;
+    } else {
+      svg += `<text x="${baseX + 4}" y="${baseY - drawW/2 - 18}" class="lbl-in">0</text>`;
+    }
+
+    const leftLowerVal = upperIsOuter ? 0 : info.outerProtrusion;
+    if (leftLowerVal > 0.5) {
+      const dnDimY = baseY + drawW/2 + 18;
+      svg += `<line x1="${baseX}" y1="${dnDimY}" x2="${leftLowerCut}" y2="${dnDimY}" class="dim-out"/>`;
+      svg += `<line x1="${baseX}" y1="${dnDimY - 3}" x2="${baseX}" y2="${dnDimY + 3}" class="dim-out"/>`;
+      svg += `<line x1="${leftLowerCut}" y1="${dnDimY - 3}" x2="${leftLowerCut}" y2="${dnDimY + 3}" class="dim-out"/>`;
+      svg += `<text x="${(baseX + leftLowerCut) / 2}" y="${dnDimY + 11}" class="lbl-out" text-anchor="middle">${fmt(leftLowerVal)}</text>`;
+    } else {
+      svg += `<text x="${baseX + 4}" y="${baseY + drawW/2 + 28}" class="lbl-in">0</text>`;
+    }
+
+    const rightUpperVal = upperIsOuter ? 0 : info.outerProtrusion;
+    if (rightUpperVal > 0.5) {
+      const upDimY2 = rightY - drawW/2 - 18;
+      svg += `<line x1="${rightUpperCut}" y1="${upDimY2}" x2="${rRackX1}" y2="${upDimY2}" class="dim-out"/>`;
+      svg += `<line x1="${rightUpperCut}" y1="${upDimY2 - 3}" x2="${rightUpperCut}" y2="${upDimY2 + 3}" class="dim-out"/>`;
+      svg += `<line x1="${rRackX1}" y1="${upDimY2 - 3}" x2="${rRackX1}" y2="${upDimY2 + 3}" class="dim-out"/>`;
+      svg += `<text x="${(rightUpperCut + rRackX1) / 2}" y="${upDimY2 - 4}" class="lbl-out" text-anchor="middle">${fmt(rightUpperVal)}</text>`;
+    } else {
+      svg += `<text x="${rRackX1 - 12}" y="${rightY - drawW/2 - 18}" class="lbl-in">0</text>`;
+    }
+
+    const rightLowerVal = upperIsOuter ? info.outerProtrusion : 0;
+    if (rightLowerVal > 0.5) {
+      const dnDimY2 = rightY + drawW/2 + 18;
+      svg += `<line x1="${rightLowerCut}" y1="${dnDimY2}" x2="${rRackX1}" y2="${dnDimY2}" class="dim-out"/>`;
+      svg += `<line x1="${rightLowerCut}" y1="${dnDimY2 - 3}" x2="${rightLowerCut}" y2="${dnDimY2 + 3}" class="dim-out"/>`;
+      svg += `<line x1="${rRackX1}" y1="${dnDimY2 - 3}" x2="${rRackX1}" y2="${dnDimY2 + 3}" class="dim-out"/>`;
+      svg += `<text x="${(rightLowerCut + rRackX1) / 2}" y="${dnDimY2 + 11}" class="lbl-out" text-anchor="middle">${fmt(rightLowerVal)}</text>`;
+    } else {
+      svg += `<text x="${rRackX1 - 12}" y="${rightY + drawW/2 + 28}" class="lbl-in">0</text>`;
+    }
+
+    const slantMidX = (cutCenterA + cutCenterB) / 2;
+    const slantMidY = (baseY + rightY) / 2;
+    const slantAngle = Math.atan2(rightY - baseY, cutCenterB - cutCenterA) * 180 / Math.PI;
+    const labelOffset = 14;
+    const perpRad = (slantAngle - 90) * Math.PI / 180;
+    const labelX = slantMidX + Math.cos(perpRad) * labelOffset;
+    const labelY = slantMidY + Math.sin(perpRad) * labelOffset;
+    svg += `<text x="${labelX}" y="${labelY}" class="lbl-slant" text-anchor="middle" transform="rotate(${slantAngle} ${labelX} ${labelY})">L=${fmt(info.slantCenter)}</text>`;
+
+    svg += `<text x="${cutCenterA + 6}" y="${baseY + (info.isDownward ? 14 : -6)}" class="lbl-acc">${fmt(theta)}°</text>`;
+
+    const dimX = rRackX2 + 14;
+    if (dimX < svgW - 5) {
+      svg += `<line x1="${dimX}" y1="${baseY}" x2="${dimX}" y2="${rightY}" class="dim"/>`;
+      svg += `<line x1="${dimX - 3}" y1="${baseY}" x2="${dimX + 3}" y2="${baseY}" class="dim"/>`;
+      svg += `<line x1="${dimX - 3}" y1="${rightY}" x2="${dimX + 3}" y2="${rightY}" class="dim"/>`;
+      const yLabelY = (baseY + rightY) / 2;
+      svg += `<text x="${dimX + 5}" y="${yLabelY + 3}" class="lbl">${fmt(info.offset)}</text>`;
+    }
+  } else {
+    svg += `<line x1="${baseX}" y1="${baseY - drawW/2}" x2="${rRackX1}" y2="${rightY - drawW/2}" class="bad"/>`;
+    svg += `<line x1="${baseX}" y1="${baseY + drawW/2}" x2="${rRackX1}" y2="${rightY + drawW/2}" class="bad"/>`;
+    svg += `<text x="${(baseX + rRackX1) / 2}" y="${(baseY + rightY) / 2 - 4}" class="lbl" fill="#f85149" text-anchor="middle">加工不可</text>`;
+  }
+
+  const xDimY = svgH - 14;
+  svg += `<line x1="${baseX}" y1="${xDimY - 4}" x2="${rRackX1}" y2="${xDimY - 4}" class="dim"/>`;
+  svg += `<line x1="${baseX}" y1="${xDimY - 7}" x2="${baseX}" y2="${xDimY - 1}" class="dim"/>`;
+  svg += `<line x1="${rRackX1}" y1="${xDimY - 7}" x2="${rRackX1}" y2="${xDimY - 1}" class="dim"/>`;
+  svg += `<text x="${(baseX + rRackX1) / 2}" y="${xDimY + 6}" class="lbl" text-anchor="middle">X方向 ${dx.toFixed(0)}</text>`;
+
+  svg += `</svg>`;
+
+  $(targetId).innerHTML = svg;
+}
+
+$('h-calcBtn').addEventListener('click', calcHorizontal);
+$('v-calcBtn').addEventListener('click', calcVertical);
+
+$('h-clearBtn').addEventListener('click', () => {
+  ['h-x2', 'h-y2'].forEach(id => $(id).value = '');
+  $('h-result').classList.remove('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+$('v-clearBtn').addEventListener('click', () => {
+  ['v-x2', 'v-y2'].forEach(id => $(id).value = '');
+  $('v-result').classList.remove('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+document.querySelectorAll('input').forEach(inp => {
+  inp.addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const activeScreen = document.querySelector('.screen.active');
+      const calcBtn = activeScreen.querySelector('.btn-calc');
+      if (calcBtn) calcBtn.click();
+    }
+  });
+});
+</script>
+
+</body>
+</html>
